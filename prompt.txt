@@ -1,0 +1,74 @@
+Create a bilingual dictionary entry for "{{word}}".
+Source language: {{fromLang}}
+Target language: {{toLang}}
+
+Return a valid JSON object ONLY.
+Do NOT wrap in markdown code fences. Do NOT add any text before/after the JSON.
+
+You MUST return this EXACT schema (field names and nesting must match 100%):
+{
+  "word": "<string>",
+  "phonetic": "<string>",
+  "mainMeaning": "<string>",
+  "definitions": [
+    {
+      "partOfSpeech": "<string>",
+      "meaning": "<string>"
+    }
+  ],
+  "examples": [
+    {
+      "text": "<string>",
+      "meaning": "<string>"
+    }
+  ],
+  "phrases": [
+    {
+      "text": "<string>",
+      "meaning": "<string>"
+    }
+  ],
+  "related": {
+    "synonyms": [
+      {
+        "text": "<string>",
+        "meaning": "<string>"
+      }
+    ],
+    "antonyms": [
+      {
+        "text": "<string>",
+        "meaning": "<string>"
+      }
+    ],
+    "relatedWords": [
+      {
+        "text": "<string>",
+        "meaning": "<string>"
+      }
+    ]
+  }
+}
+
+Rules:
+- "word" and every "text" field MUST be in SOURCE language.
+- Every "meaning" field MUST be in TARGET language.
+- Always include ALL keys shown above, even if arrays are empty.
+- definitions/examples/phrases/synonyms/antonyms/relatedWords must be arrays (can be empty but keys must exist).
+- phonetic must be IPA in slashes, like "/bʊk/"; if unknown, use empty string "".
+- mainMeaning:
+  - Return 1 to 3 primary/common meanings (no numbering),
+  - If there are multiple meanings, separate them with ";" inside the single string.
+  - Number of meanings may be 1, 2, or 3 depending on the word.
+- definitions:
+  - Return all distinct common definitions/senses you can for the word (no max / no limit).
+  - Do NOT randomly omit a commonly used part of speech. If a POS is common for this word (e.g., both noun and verb), include senses for ALL of those common POS.
+  - definitions array MUST be sorted by estimated popularity/frequency of that sense (most common first, descending).
+  - Include partOfSpeech and meaning for each item.
+- related.antonyms:
+  - Determine the primary sense from `mainMeaning` (first meaning) and the first/primary definition meaning.
+  - Return antonyms that are commonly accepted opposites for that primary sense in everyday usage.
+  - Spatial/positional relation rule: if the primary sense is a spatial/positional term (e.g., translations like 'phía trước/phía sau', 'trái/phải', 'trên/dưới'), include the canonical opposite antonyms (e.g., front<->back, left<->right, up<->down).
+  - If you cannot find antonyms that reasonably fit the primary sense, return an empty array: [].
+  - Do not invent antonyms that do not match the primary sense type (do not force generic opposites for unrelated senses).
+- Keep content concise. Max: 3 examples, 3 phrases, 3 synonyms, 3 antonyms, 3 relatedWords.
