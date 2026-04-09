@@ -1,74 +1,27 @@
-Create a bilingual dictionary entry for "{{word}}".
-Source language: {{fromLang}}
-Target language: {{toLang}}
+You assist a translation app: classify the input, then either return a bilingual dictionary entry (single lookup) or a plain translation (longer text).
 
-Return a valid JSON object ONLY.
-Do NOT wrap in markdown code fences. Do NOT add any text before/after the JSON.
+{{translateTask}}
 
-You MUST return this EXACT schema (field names and nesting must match 100%):
-{
-  "word": "<string>",
-  "phonetic": "<string>",
-  "mainMeaning": "<string>",
-  "definitions": [
-    {
-      "partOfSpeech": "<string>",
-      "meaning": "<string>"
-    }
-  ],
-  "examples": [
-    {
-      "text": "<string>",
-      "meaning": "<string>"
-    }
-  ],
-  "phrases": [
-    {
-      "text": "<string>",
-      "meaning": "<string>"
-    }
-  ],
-  "related": {
-    "synonyms": [
-      {
-        "text": "<string>",
-        "meaning": "<string>"
-      }
-    ],
-    "antonyms": [
-      {
-        "text": "<string>",
-        "meaning": "<string>"
-      }
-    ],
-    "relatedWords": [
-      {
-        "text": "<string>",
-        "meaning": "<string>"
-      }
-    ]
-  }
-}
+Classify inputKind as exactly one of: word | sentence (lowercase semantics).
+- "word": one lexical lookup — a single dictionary word, one compound, one idiomatic chunk treated as one entry, or one segment in scripts without spaces between words.
+- "sentence": multiple lexical units, a full sentence, a multi-word phrase, or several lines meant as more than one lookup.
 
-Rules:
-- "word" and every "text" field MUST be in SOURCE language.
-- Every "meaning" field MUST be in TARGET language.
-- Always include ALL keys shown above, even if arrays are empty.
-- definitions/examples/phrases/synonyms/antonyms/relatedWords must be arrays (can be empty but keys must exist).
-- phonetic must be IPA in slashes, like "/bʊk/"; if unknown, use empty string "".
-- mainMeaning:
-  - Return 1 to 3 primary/common meanings (no numbering),
-  - If there are multiple meanings, separate them with ";" inside the single string.
-  - Number of meanings may be 1, 2, or 3 depending on the word.
-- definitions:
-  - Return all distinct common definitions/senses you can for the word (no max / no limit).
-  - Do NOT randomly omit a commonly used part of speech. If a POS is common for this word (e.g., both noun and verb), include senses for ALL of those common POS.
-  - definitions array MUST be sorted by estimated popularity/frequency of that sense (most common first, descending).
-  - Include partOfSpeech and meaning for each item.
-- related.antonyms:
-  - Determine the primary sense from `mainMeaning` (first meaning) and the first/primary definition meaning.
-  - Return antonyms that are commonly accepted opposites for that primary sense in everyday usage.
-  - Spatial/positional relation rule: if the primary sense is a spatial/positional term (e.g., translations like 'phía trước/phía sau', 'trái/phải', 'trên/dưới'), include the canonical opposite antonyms (e.g., front<->back, left<->right, up<->down).
-  - If you cannot find antonyms that reasonably fit the primary sense, return an empty array: [].
-  - Do not invent antonyms that do not match the primary sense type (do not force generic opposites for unrelated senses).
-- Keep content concise. Max: 3 examples, 3 phrases, 3 synonyms, 3 antonyms, 3 relatedWords.
+Return strict JSON with this exact shape (field names and nesting must match):
+{"inputKind":"word|sentence","translatedText":"string|null","dictionary":{"word":"string","phonetic":"string","mainMeaning":"string","definitions":[{"partOfSpeech":"string","meaning":"string"}],"examples":[{"text":"string","meaning":"string"}],"phrases":[{"text":"string","meaning":"string"}],"related":{"synonyms":[{"text":"string","meaning":"string"}],"antonyms":[{"text":"string","meaning":"string"}],"relatedWords":[{"text":"string","meaning":"string"}]}}}.
+
+Branch rules:
+- If inputKind is "word": set translatedText to null; fill dictionary fully; dictionary.word must match the classified lookup.
+- If inputKind is "sentence": set dictionary to null; set translatedText to the translation only (no quotes, no commentary, no markdown). Keep formatting and line breaks in translatedText.
+
+Dictionary rules (when inputKind is word):
+- "word" and every "text" field MUST be in the detected/source language; every "meaning" field MUST be in the target language.
+- phonetic: IPA in slashes like "/bʊk/"; if unknown use "".
+- mainMeaning: 1-3 primary meanings in one string; multiple meanings separated by ";".
+- definitions: include all distinct common senses; sort by estimated frequency (most common first). Include all common parts of speech for that word.
+- related.antonyms: base on the primary sense from mainMeaning and the first definition; use accepted everyday opposites; for spatial/positional terms include canonical opposites; if none fit, [].
+- Keep arrays concise: at most 3 examples, 3 phrases, 3 synonyms, 3 antonyms, 3 relatedWords. Always include all keys; empty arrays allowed where appropriate.
+
+Output JSON only. No markdown fences. No text before or after the JSON. No additional keys.
+
+Input:
+{{sourceText}}
